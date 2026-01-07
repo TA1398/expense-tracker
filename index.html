@@ -3,288 +3,239 @@
 <head>
   <meta charset="UTF-8" />
   <title>Expense Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      padding-top: 40px;
-    }
-
-    .app {
-  background: white;
-  width: 95%;
-  max-width: 1100px;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-
-    h2 {
-      text-align: center;
-    }
-
-    .balance {
-      text-align: center;
-      margin: 20px 0;
-    }
-
-    .balance h1 {
-      margin: 5px 0;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-    }
-
-    button {
-      background: #2ecc71;
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 20px;
-    }
-
-    li {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px;
-      margin-bottom: 5px;
-      border-left: 5px solid;
-      background: #f9f9f9;
-    }
-
-    .income {
-      border-color: green;
-    }
-
-    .expense {
-      border-color: red;
-    }
-    li button {
-        background-color: transparent;
-        border: none;
-        cursor: pointer;
-        margin-left: 8px;
-    }
-    .container {
-  display: flex;
-  gap: 20px;
-}
-
-.left {
-  flex: 1;
-}
-
-.right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Chart sizing */
-canvas {
-  max-width: 100%;
-  height: auto;
-}
-
-/* 📱 Mobile responsiveness */
-@media (max-width: 768px) {
-  .container {
-    flex-direction: column;
-  }
-}
-
-  </style>
-</head>
-<body>
-
-  <div class="app">
-    <div class="container">
-  <div class="left">
-    <h2>Expense Tracker</h2>
-
-    <div class="balance">
-      <p>Current Balance</p>
-      <h1 id="balance">₹0</h1>
-    </div>
-
-    <div class="balance">
-      <p>This Month</p>
-      <h3>Income: ₹<span id="monthIncome">0</span></h3>
-      <h3>Expense: ₹<span id="monthExpense">0</span></h3>
-    </div>
-
-    <input type="text" id="text" placeholder="Enter description" />
-    <input type="number" id="amount" placeholder="Amount (use - for expense)" />
-
-    <select id="category">
-      <option value="">Select Category</option>
-      <option value="Food">Food</option>
-      <option value="Travel">Travel</option>
-      <option value="EMI">EMI</option>
-      <option value="Fun">Fun</option>
-      <option value="Other">Other</option>
-    </select>
-
-    <button onclick="addTransaction()">Add Transaction</button>
-
-    <ul id="list"></ul>
-  </div>
-
-  <div class="right">
-    <canvas id="expenseChart"></canvas>
-  </div>
-</div>
-
-    <canvas id="expenseChart"></canvas>
-
-  </div>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-  <script>
-    const balance = document.getElementById("balance");
-    const list = document.getElementById("list");
-    const text = document.getElementById("text");
-    const amount = document.getElementById("amount");
-    const category = document.getElementById("category");
+<body>
+  <div class="app">
+    <button id="themeToggle">🌙 Dark Mode</button>
+    <h2>Expense Tracker</h2>
+
+    <div class="container">
+      <!-- LEFT -->
+      <div class="left">
+        <div class="balance">
+          <p>Current Balance</p>
+          <h1 id="balance">₹0</h1>
+        </div>
+
+        <div class="balance">
+          <p>This Month</p>
+          <h3>Income: ₹<span id="monthIncome">0</span></h3>
+          <h3>Expense: ₹<span id="monthExpense">0</span></h3>
+        </div>
+
+        <input id="text" placeholder="Description" />
+        <input id="amount" type="number" placeholder="Amount" />
+
+        <!-- NEW: Type selector -->
+        <div class="type-toggle">
+          <label>
+            <input type="radio" name="type" value="income" checked />
+            Income
+          </label>
+          <label>
+            <input type="radio" name="type" value="expense" />
+            Expense
+          </label>
+        </div>
+
+        <select id="category">
+          <option value="">Select Category</option>
+          <option value="Food">Food</option>
+          <option value="Travel">Travel</option>
+          <option value="EMI">EMI</option>
+          <option value="Fun">Fun</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <button onclick="addTransaction()">➕ Add Transaction</button>
+        <button onclick="exportCSV()">⬇️ Export CSV</button>
 
 
-    let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-    let chart;
+        <ul id="list"></ul>
+      </div>
 
-    function addTransaction() {
-      if (text.value === "" || amount.value === "") {
-        alert("Please enter description and amount");
-        return;
-      }
+      <!-- RIGHT -->
+      <div class="right">
+        <canvas id="expenseChart"></canvas>
+      </div>
+    </div>
+  </div>
 
-      const transaction = {
-  id: Date.now(),
-  text: text.value,
-  amount: +amount.value,
-  category: category.value,
-  date: new Date().toISOString()
+<script>
+const balanceEl = document.getElementById("balance");
+const list = document.getElementById("list");
+const text = document.getElementById("text");
+const amountInput = document.getElementById("amount");
+const category = document.getElementById("category");
+const themeToggle = document.getElementById("themeToggle");
+
+let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+let chart;
+
+const categoryColors = {
+  Food: "#22c55e",
+  Travel: "#3b82f6",
+  EMI: "#ef4444",
+  Fun: "#eab308",
+  Other: "#8b5cf6"
 };
 
-
-
-      transactions.push(transaction);
-      localStorage.setItem("transactions", JSON.stringify(transactions));
-
-      text.value = "";
-      amount.value = "";
-      category.value = "";
-
-
-      updateUI();
-    }
-
-    function updateUI() {
-      list.innerHTML = "";
-      let total = 0;
-
-      transactions.forEach(txn => {
-        total += txn.amount;
-
-        const li = document.createElement("li");
-        li.classList.add(txn.amount < 0 ? "expense" : "income");
-
-        li.innerHTML = `
-          <strong>${txn.text}</strong>
-          <small>(${txn.category})</small>
-          <span>
-            ₹${txn.amount}
-            <button onclick="deleteTransaction(${txn.id})">❌</button>
-          </span>
-        `;
-
-
-
-        list.appendChild(li);
-      });
-
-      balance.innerText = `₹${total}`;
-
-      updateMonthlySummary();
-      updateChart();
-
-    }
-
-    function updateMonthlySummary() {
-  const now = new Date();
-  let income = 0;
-  let expense = 0;
-
-  transactions.forEach(txn => {
-    const txnDate = new Date(txn.date);
-    if (
-      txnDate.getMonth() === now.getMonth() &&
-      txnDate.getFullYear() === now.getFullYear()
-    ) {
-      if (txn.amount > 0) income += txn.amount;
-      else expense += txn.amount;
-    }
-  });
-
-  document.getElementById("monthIncome").innerText = income;
-  document.getElementById("monthExpense").innerText = Math.abs(expense);
+/* THEME */
+if (localStorage.getItem("theme") === "dark") {
+  document.body.classList.add("dark");
+  themeToggle.innerText = "☀️ Light Mode";
 }
 
-    updateUI();
+themeToggle.onclick = () => {
+  document.body.classList.toggle("dark");
+  const dark = document.body.classList.contains("dark");
+  localStorage.setItem("theme", dark ? "dark" : "light");
+  themeToggle.innerText = dark ? "☀️ Light Mode" : "🌙 Dark Mode";
+};
 
-    function deleteTransaction(id) {
-      transactions = transactions.filter(txn => txn.id !== id);
-      localStorage.setItem("transactions", JSON.stringify(transactions));
-      
+/* ADD TRANSACTION */
+function addTransaction() {
+  const textVal = text.value.trim();
+  const amountVal = Number(amountInput.value);
+  const catVal = category.value;
+  const type = document.querySelector('input[name="type"]:checked').value;
 
-      updateUI();
-      
-     }
+  if (!textVal || !amountVal || !catVal) {
+    alert("Please fill all fields");
+    return;
+  }
 
-    
+  const finalAmount = type === "expense" ? -amountVal : amountVal;
 
-    
+  transactions.push({
+    id: Date.now(),
+    text: textVal,
+    amount: finalAmount,
+    category: catVal,
+    date: new Date().toISOString()
+  });
 
-function updateChart() {
-  const categories = {};
-  
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+  text.value = amountInput.value = category.value = "";
+  updateUI();
+}
+
+/* UI */
+function updateUI() {
+  list.innerHTML = "";
+  let total = 0;
+
   transactions.forEach(txn => {
-    if (txn.amount < 0) {
-      categories[txn.category] =
-        (categories[txn.category] || 0) + Math.abs(txn.amount);
+    total += txn.amount;
+
+    const li = document.createElement("li");
+    li.className = txn.amount < 0 ? "expense" : "income";
+    li.style.borderLeftColor = categoryColors[txn.category];
+
+    li.innerHTML = `
+  <div class="txn-left">
+    <strong>${txn.text}</strong><br>
+    <small>${txn.category}</small>
+  </div>
+
+  <div class="txn-right">
+    <span class="amount">₹${txn.amount}</span>
+    <button class="delete-btn" onclick="deleteTransaction(${txn.id})" title="Delete">
+      🗑️
+    </button>
+  </div>
+`;
+
+
+    list.appendChild(li);
+  });
+
+  balanceEl.innerText = `₹${total}`;
+  updateMonthlySummary();
+  updateChart();
+}
+
+/* MONTH SUMMARY */
+function updateMonthlySummary() {
+  const now = new Date();
+  let income = 0, expense = 0;
+
+  transactions.forEach(txn => {
+    const d = new Date(txn.date);
+    if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+      txn.amount > 0 ? income += txn.amount : expense += txn.amount;
     }
   });
 
-  const data = {
-    labels: Object.keys(categories),
-    datasets: [{
-      data: Object.values(categories)
-    }]
-  };
+  monthIncome.innerText = income;
+  monthExpense.innerText = Math.abs(expense);
+}
+
+/* CHART */
+function updateChart() {
+  const map = {};
+  transactions.forEach(txn => {
+    if (txn.amount < 0) {
+      map[txn.category] = (map[txn.category] || 0) + Math.abs(txn.amount);
+    }
+  });
 
   if (chart) chart.destroy();
 
-  chart = new Chart(document.getElementById("expenseChart"), {
+  chart = new Chart(expenseChart, {
     type: "pie",
-    data: data
+    data: {
+      labels: Object.keys(map),
+      datasets: [{
+        data: Object.values(map),
+        backgroundColor: Object.keys(map).map(k => categoryColors[k])
+      }]
+    }
   });
 }
 
+updateUI();
+function deleteTransaction(id) {
+  transactions = transactions.filter(txn => txn.id !== id);
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+  updateUI();
+}
 
-  </script>
+function exportCSV() {
+  if (!transactions.length) {
+    alert("No transactions to export");
+    return;
+  }
 
+  const headers = ["Date", "Description", "Category", "Amount"];
+  const rows = transactions.map(txn => [
+    new Date(txn.date).toLocaleDateString(),
+    txn.text,
+    txn.category,
+    txn.amount
+  ]);
+
+  let csvContent = headers.join(",") + "\n";
+  rows.forEach(row => {
+    csvContent += row.join(",") + "\n";
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "expense-tracker.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+</script>
 </body>
 </html>
