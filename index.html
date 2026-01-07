@@ -68,6 +68,7 @@
   </div>
 
 <script>
+emailjs.init("YOUR_PUBLIC_KEY");
 const balanceEl = document.getElementById("balance");
 const list = document.getElementById("list");
 const text = document.getElementById("text");
@@ -112,6 +113,28 @@ function addTransaction() {
   }
 
   const finalAmount = type === "expense" ? -amountVal : amountVal;
+
+  // 🔔 STEP 6: Send email ONLY for expenses
+if (type === "expense") {
+  emailjs.send(
+    "service_5c74smz",
+    "template_iihn07o",
+    {
+      to_email: "vraj53009@gmail.com",
+      amount: amountVal,
+      category: catVal,
+      description: textVal,
+      date: new Date().toLocaleString()
+    }
+  )
+  .then(() => {
+    console.log("Expense email sent");
+  })
+  .catch((error) => {
+    console.error("Email failed:", error);
+  });
+}
+
 
   transactions.push({
     id: Date.now(),
@@ -240,4 +263,3 @@ function exportCSV() {
 </script>
 </body>
 </html>
-
