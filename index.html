@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expense Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      padding-top: 40px;
+    }
+
+    .app {
+  background: white;
+  width: 95%;
+  max-width: 1100px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+
+    h2 {
+      text-align: center;
+    }
+
+    .balance {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .balance h1 {
+      margin: 5px 0;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+    }
+
+    button {
+      background: #2ecc71;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      margin-bottom: 5px;
+      border-left: 5px solid;
+      background: #f9f9f9;
+    }
+
+    .income {
+      border-color: green;
+    }
+
+    .expense {
+      border-color: red;
+    }
+    li button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+    .container {
+  display: flex;
+  gap: 20px;
+}
+
+.left {
+  flex: 1;
+}
+
+.right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Chart sizing */
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 📱 Mobile responsiveness */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <div class="container">
+  <div class="left">
+    <h2>Expense Tracker</h2>
+
+    <div class="balance">
+      <p>Current Balance</p>
+      <h1 id="balance">₹0</h1>
+    </div>
+
+    <div class="balance">
+      <p>This Month</p>
+      <h3>Income: ₹<span id="monthIncome">0</span></h3>
+      <h3>Expense: ₹<span id="monthExpense">0</span></h3>
+    </div>
+
+    <input type="text" id="text" placeholder="Enter description" />
+    <input type="number" id="amount" placeholder="Amount (use - for expense)" />
+
+    <select id="category">
+      <option value="">Select Category</option>
+      <option value="Food">Food</option>
+      <option value="Travel">Travel</option>
+      <option value="EMI">EMI</option>
+      <option value="Fun">Fun</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <button onclick="addTransaction()">Add Transaction</button>
+
+    <ul id="list"></ul>
+  </div>
+
+  <div class="right">
+    <canvas id="expenseChart"></canvas>
+  </div>
+</div>
+
+    <canvas id="expenseChart"></canvas>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const balance = document.getElementById("balance");
+    const list = document.getElementById("list");
+    const text = document.getElementById("text");
+    const amount = document.getElementById("amount");
+    const category = document.getElementById("category");
+
+
+    let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+    let chart;
+
+    function addTransaction() {
+      if (text.value === "" || amount.value === "") {
+        alert("Please enter description and amount");
+        return;
+      }
+
+      const transaction = {
+  id: Date.now(),
+  text: text.value,
+  amount: +amount.value,
+  category: category.value,
+  date: new Date().toISOString()
+};
+
+
+
+      transactions.push(transaction);
+      localStorage.setItem("transactions", JSON.stringify(transactions));
+
+      text.value = "";
+      amount.value = "";
+      category.value = "";
+
+
+      updateUI();
+    }
+
+    function updateUI() {
+      list.innerHTML = "";
+      let total = 0;
+
+      transactions.forEach(txn => {
+        total += txn.amount;
+
+        const li = document.createElement("li");
+        li.classList.add(txn.amount < 0 ? "expense" : "income");
+
+        li.innerHTML = `
+          <strong>${txn.text}</strong>
+          <small>(${txn.category})</small>
+          <span>
+            ₹${txn.amount}
+            <button onclick="deleteTransaction(${txn.id})">❌</button>
+          </span>
+        `;
+
+
+
+        list.appendChild(li);
+      });
+
+      balance.innerText = `₹${total}`;
+
+      updateMonthlySummary();
+      updateChart();
+
+    }
+
+    function updateMonthlySummary() {
+  const now = new Date();
+  let income = 0;
+  let expense = 0;
+
+  transactions.forEach(txn => {
+    const txnDate = new Date(txn.date);
+    if (
+      txnDate.getMonth() === now.getMonth() &&
+      txnDate.getFullYear() === now.getFullYear()
+    ) {
+      if (txn.amount > 0) income += txn.amount;
+      else expense += txn.amount;
+    }
+  });
+
+  document.getElementById("monthIncome").innerText = income;
+  document.getElementById("monthExpense").innerText = Math.abs(expense);
+}
+
+    updateUI();
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(txn => txn.id !== id);
+      localStorage.setItem("transactions", JSON.stringify(transactions));
+      
+
+      updateUI();
+      
+     }
+
+    
+
+    
+
+function updateChart() {
+  const categories = {};
+  
+  transactions.forEach(txn => {
+    if (txn.amount < 0) {
+      categories[txn.category] =
+        (categories[txn.category] || 0) + Math.abs(txn.amount);
+    }
+  });
+
+  const data = {
+    labels: Object.keys(categories),
+    datasets: [{
+      data: Object.values(categories)
+    }]
+  };
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("expenseChart"), {
+    type: "pie",
+    data: data
+  });
+}
+
+
+  </script>
+
+</body>
+</html>
